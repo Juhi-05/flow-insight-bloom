@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
@@ -21,8 +21,10 @@ import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Pencil, Trash2, BookOpen } from "lucide-react";
 import { useToast } from "@/hooks/use-toast";
 
+const API_URL = "http://localhost:5000/api/books";
+
 interface Book {
-  id: string;
+  _id: string;
   title: string;
   author: string;
   isbn: string;
@@ -42,6 +44,24 @@ const Library = () => {
     status: "Available" as "Available" | "Borrowed",
   });
 
+  useEffect(() => {
+    fetchBooks();
+  }, []);
+
+  const fetchBooks = async () => {
+    try {
+      const response = await fetch(API_URL);
+      const data = await response.json();
+      setBooks(data);
+    } catch (error) {
+      toast({
+        title: "Error",
+        description: "Failed to fetch books. Make sure backend is running.",
+        variant: "destructive",
+      });
+    }
+  };
+
   const resetForm = () => {
     setFormData({
       title: "",
@@ -53,7 +73,7 @@ const Library = () => {
     setEditingId(null);
   };
 
-  const handleSubmit = (e: React.FormEvent) => {
+  const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
 
     if (!formData.title || !formData.author || !formData.isbn || !formData.category) {
@@ -65,31 +85,38 @@ const Library = () => {
       return;
     }
 
-    if (editingId) {
-      // Update existing book
-      setBooks(books.map(book => 
-        book.id === editingId 
-          ? { ...formData, id: editingId }
-          : book
-      ));
+    try {
+      if (editingId) {
+        await fetch(`${API_URL}/update/${editingId}`, {
+          method: "PUT",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify(formData),
+        });
+        toast({
+          title: "Success",
+          description: "Book updated successfully",
+        });
+      } else {
+        await fetch(`${API_URL}/add`, {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify(formData),
+        });
+        toast({
+          title: "Success",
+          description: "Book added successfully",
+        });
+      }
+
+      resetForm();
+      fetchBooks();
+    } catch (error) {
       toast({
-        title: "Success",
-        description: "Book updated successfully",
-      });
-    } else {
-      // Add new book
-      const newBook: Book = {
-        ...formData,
-        id: Date.now().toString(),
-      };
-      setBooks([...books, newBook]);
-      toast({
-        title: "Success",
-        description: "Book added successfully",
+        title: "Error",
+        description: "Failed to save book. Make sure backend is running.",
+        variant: "destructive",
       });
     }
-
-    resetForm();
   };
 
   const handleEdit = (book: Book) => {
@@ -100,15 +127,26 @@ const Library = () => {
       category: book.category,
       status: book.status,
     });
-    setEditingId(book.id);
+    setEditingId(book._id);
   };
 
-  const handleDelete = (id: string) => {
-    setBooks(books.filter(book => book.id !== id));
-    toast({
-      title: "Success",
-      description: "Book deleted successfully",
-    });
+  const handleDelete = async (id: string) => {
+    try {
+      await fetch(`${API_URL}/delete/${id}`, {
+        method: "DELETE",
+      });
+      toast({
+        title: "Success",
+        description: "Book deleted successfully",
+      });
+      fetchBooks();
+    } catch (error) {
+      toast({
+        title: "Error",
+        description: "Failed to delete book. Make sure backend is running.",
+        variant: "destructive",
+      });
+    }
   };
 
   return (
@@ -234,7 +272,7 @@ const Library = () => {
                   </TableHeader>
                   <TableBody>
                     {books.map((book) => (
-                      <TableRow key={book.id} className="animate-fade-in">
+                      <TableRow key={book._id} className="animate-fade-in">
                         <TableCell className="font-medium">{book.title}</TableCell>
                         <TableCell>{book.author}</TableCell>
                         <TableCell>{book.isbn}</TableCell>
@@ -263,7 +301,7 @@ const Library = () => {
                             <Button
                               variant="destructive"
                               size="icon"
-                              onClick={() => handleDelete(book.id)}
+                              onClick={() => handleDelete(book._id)}
                               className="hover-scale"
                             >
                               <Trash2 className="w-4 h-4" />
