@@ -10,6 +10,7 @@ import TrackCycle from "./pages/TrackCycle";
 import LogSymptoms from "./pages/LogSymptoms";
 import Profile from "./pages/Profile";
 import Insights from "./pages/Insights";
+import Library from "./pages/Library";
 import NotFound from "./pages/NotFound";
 
 const queryClient = new QueryClient();
@@ -28,6 +29,7 @@ const App = () => (
           <Route path="/log-symptoms" element={<LogSymptoms />} />
           <Route path="/profile" element={<Profile />} />
           <Route path="/insights" element={<Insights />} />
+          <Route path="/library" element={<Library />} />
           {/* ADD ALL CUSTOM ROUTES ABOVE THE CATCH-ALL "*" ROUTE */}
           <Route path="*" element={<NotFound />} />
         </Routes>
