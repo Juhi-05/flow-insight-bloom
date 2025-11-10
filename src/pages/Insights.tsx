@@ -1,10 +1,178 @@
+import { useEffect, useState } from "react";
 import { useNavigate } from "react-router-dom";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { ArrowLeft, TrendingUp, Info } from "lucide-react";
+import { supabase } from "@/integrations/supabase/client";
+import { HealthChatbot } from "@/components/HealthChatbot";
+
+interface AgeBasedTips {
+  category: string;
+  icon: string;
+  tips: string[];
+}
+
+const getAgeBasedTips = (age: number | null): AgeBasedTips[] => {
+  if (!age) return [];
+
+  if (age >= 13 && age <= 19) {
+    // Teens
+    return [
+      {
+        category: "Understanding Your Cycle",
+        icon: "📚",
+        tips: [
+          "Track your period to understand your cycle pattern",
+          "Learn about the phases of menstruation",
+          "It's normal for cycles to be irregular in the first 2-3 years",
+        ],
+      },
+      {
+        category: "Nutrition & Wellness",
+        icon: "🥗",
+        tips: [
+          "Eat iron-rich foods like leafy greens and lean proteins",
+          "Stay hydrated throughout the day",
+          "Maintain a balanced diet with whole grains and fruits",
+        ],
+      },
+      {
+        category: "Stress Management",
+        icon: "🧘‍♀️",
+        tips: [
+          "Practice relaxation techniques like deep breathing",
+          "Get 8-10 hours of sleep each night",
+          "Stay physically active with activities you enjoy",
+        ],
+      },
+    ];
+  } else if (age >= 20 && age <= 35) {
+    // Adults
+    return [
+      {
+        category: "Fertility Awareness",
+        icon: "🌸",
+        tips: [
+          "Track ovulation if planning pregnancy",
+          "Understand fertile window (typically days 11-21 of cycle)",
+          "Consider basal body temperature tracking",
+        ],
+      },
+      {
+        category: "Healthy Habits",
+        icon: "💪",
+        tips: [
+          "Maintain a healthy BMI for regular cycles",
+          "Exercise moderately 30 minutes daily",
+          "Limit alcohol and caffeine intake",
+        ],
+      },
+      {
+        category: "Cycle Optimization",
+        icon: "⚡",
+        tips: [
+          "Note patterns between stress and cycle irregularities",
+          "Eat anti-inflammatory foods like omega-3s",
+          "Consider supplements like vitamin D and magnesium",
+        ],
+      },
+    ];
+  } else if (age >= 36 && age <= 50) {
+    // Mature
+    return [
+      {
+        category: "PCOS Management",
+        icon: "🩺",
+        tips: [
+          "Monitor blood sugar levels regularly",
+          "Focus on low-glycemic index foods",
+          "Consider inositol supplementation (consult doctor)",
+        ],
+      },
+      {
+        category: "Hormonal Balance",
+        icon: "⚖️",
+        tips: [
+          "Watch for changes in cycle length or flow",
+          "Manage stress with yoga or meditation",
+          "Support liver health with cruciferous vegetables",
+        ],
+      },
+      {
+        category: "Nutrition Focus",
+        icon: "🍎",
+        tips: [
+          "Increase fiber intake for hormone regulation",
+          "Choose organic produce when possible",
+          "Limit processed foods and refined sugars",
+        ],
+      },
+    ];
+  } else {
+    // Menopause (50+)
+    return [
+      {
+        category: "Managing Symptoms",
+        icon: "🌡️",
+        tips: [
+          "Track hot flashes and night sweats patterns",
+          "Dress in layers for temperature changes",
+          "Keep bedroom cool for better sleep",
+        ],
+      },
+      {
+        category: "Bone Health",
+        icon: "🦴",
+        tips: [
+          "Increase calcium intake (1200mg daily)",
+          "Get adequate vitamin D through sunlight or supplements",
+          "Weight-bearing exercises strengthen bones",
+        ],
+      },
+      {
+        category: "Regular Checkups",
+        icon: "👩‍⚕️",
+        tips: [
+          "Annual gynecological exams are essential",
+          "Monitor bone density every 1-2 years",
+          "Discuss HRT options with your doctor if needed",
+        ],
+      },
+    ];
+  }
+};
 
 const Insights = () => {
   const navigate = useNavigate();
+  const [age, setAge] = useState<number | null>(null);
+  const [loading, setLoading] = useState(true);
+
+  useEffect(() => {
+    const fetchProfile = async () => {
+      try {
+        const { data: { user } } = await supabase.auth.getUser();
+        if (user) {
+          const { data } = await supabase
+            .from("profiles")
+            .select("age")
+            .eq("id", user.id)
+            .single();
+          
+          if (data?.age) {
+            setAge(data.age);
+          }
+        }
+      } catch (error) {
+        console.error("Error fetching profile:", error);
+      } finally {
+        setLoading(false);
+      }
+    };
+
+    fetchProfile();
+  }, []);
+
+  const ageBasedTips = getAgeBasedTips(age);
 
   return (
     <div className="min-h-screen" style={{ background: "var(--gradient-hero)" }}>
@@ -35,6 +203,62 @@ const Insights = () => {
         </div>
 
         <div className="space-y-6">
+          {loading ? (
+            <Card className="rounded-2xl backdrop-blur-sm" style={{ background: "var(--gradient-card)" }}>
+              <CardContent className="py-8">
+                <div className="text-center text-muted-foreground">Loading your personalized tips...</div>
+              </CardContent>
+            </Card>
+          ) : age && ageBasedTips.length > 0 ? (
+            <>
+              <Card className="rounded-2xl backdrop-blur-sm" style={{ background: "var(--gradient-card)" }}>
+                <CardHeader>
+                  <CardTitle>Personalized Tips for You</CardTitle>
+                  <CardDescription>
+                    Based on your age group, here are recommendations tailored to your health needs
+                  </CardDescription>
+                </CardHeader>
+              </Card>
+
+              <div className="grid md:grid-cols-3 gap-6">
+                {ageBasedTips.map((section, idx) => (
+                  <Card key={idx} className="rounded-2xl">
+                    <CardHeader>
+                      <div className="flex items-center gap-2 mb-2">
+                        <span className="text-2xl">{section.icon}</span>
+                        <CardTitle className="text-lg">{section.category}</CardTitle>
+                      </div>
+                    </CardHeader>
+                    <CardContent>
+                      <ul className="space-y-3">
+                        {section.tips.map((tip, tipIdx) => (
+                          <li key={tipIdx} className="text-sm flex items-start gap-2">
+                            <span className="text-primary mt-1">•</span>
+                            <span className="text-muted-foreground">{tip}</span>
+                          </li>
+                        ))}
+                      </ul>
+                    </CardContent>
+                  </Card>
+                ))}
+              </div>
+            </>
+          ) : (
+            <Card className="rounded-2xl backdrop-blur-sm" style={{ background: "var(--gradient-card)" }}>
+              <CardHeader>
+                <CardTitle>Get Personalized Tips</CardTitle>
+                <CardDescription>
+                  Add your age in your profile to receive customized health recommendations
+                </CardDescription>
+              </CardHeader>
+              <CardContent>
+                <Button onClick={() => navigate("/profile")} className="rounded-xl">
+                  Complete Your Profile
+                </Button>
+              </CardContent>
+            </Card>
+          )}
+
           <Card className="rounded-2xl backdrop-blur-sm" style={{ background: "var(--gradient-card)" }}>
             <CardHeader>
               <CardTitle>Getting Started</CardTitle>
@@ -66,9 +290,9 @@ const Insights = () => {
               <div className="flex items-start gap-3 p-4 bg-muted/30 rounded-xl">
                 <Info className="w-5 h-5 text-accent mt-0.5 flex-shrink-0" />
                 <div>
-                  <h3 className="font-medium mb-1">PCOS Management</h3>
+                  <h3 className="font-medium mb-1">AI Health Assistant</h3>
                   <p className="text-sm text-muted-foreground">
-                    If you're tracking PCOS symptoms, we'll provide insights on hormonal patterns and lifestyle recommendations based on your data.
+                    Use the chat assistant to ask questions about menstrual health, PCOS, and wellness. Click the chat icon in the bottom right!
                   </p>
                 </div>
               </div>
@@ -128,6 +352,8 @@ const Insights = () => {
           </div>
         </div>
       </main>
+      
+      <HealthChatbot />
     </div>
   );
 };

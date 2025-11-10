@@ -6,6 +6,7 @@ import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Calendar, Heart, TrendingUp, LogOut, User as UserIcon, FileText } from "lucide-react";
 import { useToast } from "@/hooks/use-toast";
+import { HealthChatbot } from "@/components/HealthChatbot";
 
 const Dashboard = () => {
   const [user, setUser] = useState<User | null>(null);
@@ -174,6 +175,8 @@ const Dashboard = () => {
           </Card>
         </div>
       </main>
+      
+      <HealthChatbot />
     </div>
   );
 };
