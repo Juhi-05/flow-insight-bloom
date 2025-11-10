@@ -7,6 +7,7 @@ import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/com
 import { Calendar, Heart, TrendingUp, LogOut, User as UserIcon, FileText } from "lucide-react";
 import { useToast } from "@/hooks/use-toast";
 import { HealthChatbot } from "@/components/HealthChatbot";
+import { format } from "date-fns";
 
 const Dashboard = () => {
   const [user, setUser] = useState<User | null>(null);
@@ -70,7 +71,14 @@ const Dashboard = () => {
           const nextDate = new Date(lastCycle.start_date);
           nextDate.setDate(nextDate.getDate() + Math.round(avgLength));
           const daysUntil = Math.ceil((nextDate.getTime() - new Date().getTime()) / (1000 * 60 * 60 * 24));
-          setNextPeriod(daysUntil > 0 ? `In ${daysUntil} days` : "Overdue");
+          
+          const formattedDate = format(nextDate, "MMM dd, yyyy");
+          if (daysUntil > 0) {
+            setNextPeriod(`${formattedDate} (in ${daysUntil} days)`);
+          } else {
+            const daysOverdue = Math.abs(daysUntil);
+            setNextPeriod(`${formattedDate} (overdue by ${daysOverdue} days)`);
+          }
         }
       }
 
