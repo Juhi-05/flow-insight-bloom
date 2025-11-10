@@ -11,6 +11,9 @@ import { HealthChatbot } from "@/components/HealthChatbot";
 const Dashboard = () => {
   const [user, setUser] = useState<User | null>(null);
   const [loading, setLoading] = useState(true);
+  const [avgCycle, setAvgCycle] = useState<number | null>(null);
+  const [nextPeriod, setNextPeriod] = useState<string | null>(null);
+  const [logsCount, setLogsCount] = useState<number>(0);
   const navigate = useNavigate();
   const { toast } = useToast();
 
@@ -20,6 +23,8 @@ const Dashboard = () => {
         setUser(session?.user ?? null);
         if (!session?.user) {
           navigate("/auth");
+        } else {
+          fetchDashboardData(session.user.id);
         }
       }
     );
@@ -28,12 +33,64 @@ const Dashboard = () => {
       setUser(session?.user ?? null);
       if (!session?.user) {
         navigate("/auth");
+      } else {
+        fetchDashboardData(session.user.id);
       }
       setLoading(false);
     });
 
     return () => subscription.unsubscribe();
   }, [navigate]);
+
+  const fetchDashboardData = async (userId: string) => {
+    try {
+      // Fetch cycles data
+      const { data: cycles, error: cyclesError } = await supabase
+        .from("cycles")
+        .select("*")
+        .eq("user_id", userId)
+        .order("start_date", { ascending: false });
+
+      if (cyclesError) throw cyclesError;
+
+      // Calculate average cycle length
+      if (cycles && cycles.length > 0) {
+        const cyclesWithLength = cycles.filter(c => c.cycle_length);
+        if (cyclesWithLength.length > 0) {
+          const avg = cyclesWithLength.reduce((sum, c) => sum + (c.cycle_length || 0), 0) / cyclesWithLength.length;
+          setAvgCycle(Math.round(avg));
+        }
+
+        // Predict next period
+        const lastCycle = cycles[0];
+        if (lastCycle && lastCycle.start_date) {
+          const avgLength = cyclesWithLength.length > 0 
+            ? cyclesWithLength.reduce((sum, c) => sum + (c.cycle_length || 0), 0) / cyclesWithLength.length 
+            : 28;
+          const nextDate = new Date(lastCycle.start_date);
+          nextDate.setDate(nextDate.getDate() + Math.round(avgLength));
+          const daysUntil = Math.ceil((nextDate.getTime() - new Date().getTime()) / (1000 * 60 * 60 * 24));
+          setNextPeriod(daysUntil > 0 ? `In ${daysUntil} days` : "Overdue");
+        }
+      }
+
+      // Count symptom logs for this month
+      const startOfMonth = new Date();
+      startOfMonth.setDate(1);
+      startOfMonth.setHours(0, 0, 0, 0);
+
+      const { data: logs, error: logsError } = await supabase
+        .from("symptom_logs")
+        .select("id", { count: "exact" })
+        .eq("user_id", userId)
+        .gte("log_date", startOfMonth.toISOString().split("T")[0]);
+
+      if (logsError) throw logsError;
+      setLogsCount(logs?.length || 0);
+    } catch (error) {
+      console.error("Error fetching dashboard data:", error);
+    }
+  };
 
   const handleSignOut = async () => {
     await supabase.auth.signOut();
@@ -145,7 +202,9 @@ const Dashboard = () => {
               </CardTitle>
             </CardHeader>
             <CardContent>
-              <div className="text-3xl font-bold">28 days</div>
+              <div className="text-3xl font-bold">
+                {avgCycle ? `${avgCycle} days` : "No data yet"}
+              </div>
               <p className="text-xs text-muted-foreground mt-1">Based on your history</p>
             </CardContent>
           </Card>
@@ -157,7 +216,9 @@ const Dashboard = () => {
               </CardTitle>
             </CardHeader>
             <CardContent>
-              <div className="text-3xl font-bold">In 12 days</div>
+              <div className="text-3xl font-bold">
+                {nextPeriod || "No data yet"}
+              </div>
               <p className="text-xs text-muted-foreground mt-1">Predicted date</p>
             </CardContent>
           </Card>
@@ -169,7 +230,7 @@ const Dashboard = () => {
               </CardTitle>
             </CardHeader>
             <CardContent>
-              <div className="text-3xl font-bold">0</div>
+              <div className="text-3xl font-bold">{logsCount}</div>
               <p className="text-xs text-muted-foreground mt-1">Symptom entries</p>
             </CardContent>
           </Card>
