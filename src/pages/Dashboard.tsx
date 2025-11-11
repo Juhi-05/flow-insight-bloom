@@ -8,6 +8,8 @@ import { Calendar, Heart, TrendingUp, LogOut, User as UserIcon, FileText } from 
 import { useToast } from "@/hooks/use-toast";
 import { HealthChatbot } from "@/components/HealthChatbot";
 import { format } from "date-fns";
+import AgeBasedTips from "@/components/AgeBasedTips";
+import MaleEducationContent from "@/components/MaleEducationContent";
 
 const Dashboard = () => {
   const [user, setUser] = useState<User | null>(null);
@@ -15,6 +17,8 @@ const Dashboard = () => {
   const [avgCycle, setAvgCycle] = useState<number | null>(null);
   const [nextPeriod, setNextPeriod] = useState<string | null>(null);
   const [logsCount, setLogsCount] = useState<number>(0);
+  const [gender, setGender] = useState<string | null>(null);
+  const [age, setAge] = useState<number | null>(null);
   const navigate = useNavigate();
   const { toast } = useToast();
 
@@ -45,6 +49,18 @@ const Dashboard = () => {
 
   const fetchDashboardData = async (userId: string) => {
     try {
+      // Fetch user profile for gender and age
+      const { data: profile } = await supabase
+        .from("profiles")
+        .select("gender, age")
+        .eq("id", userId)
+        .single();
+      
+      if (profile) {
+        setGender(profile.gender);
+        setAge(profile.age);
+      }
+
       // Fetch cycles data
       const { data: cycles, error: cyclesError } = await supabase
         .from("cycles")
@@ -168,10 +184,16 @@ const Dashboard = () => {
 
       {/* Main Content */}
       <main className="container mx-auto px-4 py-8">
-        <div className="mb-8">
-          <h2 className="text-3xl font-bold mb-2">Welcome back!</h2>
-          <p className="text-muted-foreground">Here's your health overview</p>
-        </div>
+        {gender === "male" ? (
+          <>
+            <MaleEducationContent />
+          </>
+        ) : (
+          <>
+            <div className="mb-8">
+              <h2 className="text-3xl font-bold mb-2">Welcome back!</h2>
+              <p className="text-muted-foreground">Here's your health overview</p>
+            </div>
 
         {/* Quick Actions */}
         <div className="grid md:grid-cols-2 lg:grid-cols-3 gap-6 mb-8">
@@ -219,7 +241,7 @@ const Dashboard = () => {
         </div>
 
         {/* Stats Overview */}
-        <div className="grid md:grid-cols-3 gap-6">
+        <div className="grid md:grid-cols-3 gap-6 mb-8">
           <Card className="rounded-2xl">
             <CardHeader>
               <CardTitle className="text-sm font-medium text-muted-foreground">
@@ -260,6 +282,11 @@ const Dashboard = () => {
             </CardContent>
           </Card>
         </div>
+
+        {/* Age-Based Tips */}
+        <AgeBasedTips age={age} />
+          </>
+        )}
       </main>
       
       <HealthChatbot />

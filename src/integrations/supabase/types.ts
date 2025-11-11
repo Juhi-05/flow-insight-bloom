@@ -60,6 +60,7 @@ export type Database = {
           age: number | null
           created_at: string
           full_name: string | null
+          gender: string | null
           id: string
           medical_notes: string | null
           typical_cycle_length: number | null
@@ -69,6 +70,7 @@ export type Database = {
           age?: number | null
           created_at?: string
           full_name?: string | null
+          gender?: string | null
           id: string
           medical_notes?: string | null
           typical_cycle_length?: number | null
@@ -78,6 +80,7 @@ export type Database = {
           age?: number | null
           created_at?: string
           full_name?: string | null
+          gender?: string | null
           id?: string
           medical_notes?: string | null
           typical_cycle_length?: number | null
