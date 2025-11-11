@@ -153,11 +153,11 @@ const Profile = () => {
                   onChange={(e) => setTypicalCycleLength(e.target.value)}
                   placeholder="28"
                   min="21"
-                  max="45"
+                  max="30"
                   className="rounded-xl"
                 />
                 <p className="text-xs text-muted-foreground">
-                  Average number of days between periods (typically 21-35 days)
+                  For irregular cycles, select between 21-30 days
                 </p>
               </div>
 

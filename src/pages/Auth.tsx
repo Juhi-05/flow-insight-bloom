@@ -13,6 +13,7 @@ const Auth = () => {
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
   const [fullName, setFullName] = useState("");
+  const [age, setAge] = useState("");
   const [gender, setGender] = useState<"male" | "female" | "">("");
   const [loading, setLoading] = useState(false);
   const navigate = useNavigate();
@@ -43,6 +44,7 @@ const Auth = () => {
           options: {
             data: {
               full_name: fullName,
+              age: age ? parseInt(age) : null,
               gender: gender,
             },
             emailRedirectTo: `${window.location.origin}/dashboard`,
@@ -93,6 +95,21 @@ const Auth = () => {
                     value={fullName}
                     onChange={(e) => setFullName(e.target.value)}
                     required={!isLogin}
+                    className="rounded-xl"
+                  />
+                </div>
+
+                <div className="space-y-2">
+                  <Label htmlFor="age">Age</Label>
+                  <Input
+                    id="age"
+                    type="number"
+                    placeholder="25"
+                    value={age}
+                    onChange={(e) => setAge(e.target.value)}
+                    required={!isLogin}
+                    min="13"
+                    max="120"
                     className="rounded-xl"
                   />
                 </div>

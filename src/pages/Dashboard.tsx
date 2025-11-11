@@ -19,6 +19,9 @@ const Dashboard = () => {
   const [logsCount, setLogsCount] = useState<number>(0);
   const [gender, setGender] = useState<string | null>(null);
   const [age, setAge] = useState<number | null>(null);
+  const [fullName, setFullName] = useState<string>("");
+  const [isFirstLogin, setIsFirstLogin] = useState(false);
+  const [typicalCycleLength, setTypicalCycleLength] = useState<number>(28);
   const navigate = useNavigate();
   const { toast } = useToast();
 
@@ -49,16 +52,27 @@ const Dashboard = () => {
 
   const fetchDashboardData = async (userId: string) => {
     try {
-      // Fetch user profile for gender and age
+      // Fetch user profile for gender, age, and name
       const { data: profile } = await supabase
         .from("profiles")
-        .select("gender, age")
+        .select("gender, age, full_name, typical_cycle_length")
         .eq("id", userId)
         .single();
       
       if (profile) {
         setGender(profile.gender);
         setAge(profile.age);
+        setFullName(profile.full_name || "");
+        setTypicalCycleLength(profile.typical_cycle_length || 28);
+        
+        // Check if this is first login (no cycles logged yet)
+        const { data: cycles } = await supabase
+          .from("cycles")
+          .select("id")
+          .eq("user_id", userId)
+          .limit(1);
+        
+        setIsFirstLogin(!cycles || cycles.length === 0);
       }
 
       // Fetch cycles data
@@ -96,10 +110,8 @@ const Dashboard = () => {
             return;
           }
           
-          // Calculate next period from end_date
-          const avgLength = cyclesWithLength.length > 0 
-            ? cyclesWithLength.reduce((sum, c) => sum + (c.cycle_length || 0), 0) / cyclesWithLength.length 
-            : 28;
+          // Calculate next period from end_date using user's typical cycle length
+          const avgLength = typicalCycleLength;
           const nextDate = new Date(endDate);
           nextDate.setDate(nextDate.getDate() + Math.round(avgLength));
           const daysUntil = Math.ceil((nextDate.getTime() - today.getTime()) / (1000 * 60 * 60 * 24));
@@ -186,10 +198,27 @@ const Dashboard = () => {
       <main className="container mx-auto px-4 py-8">
         {gender === "male" ? (
           <>
+            {isFirstLogin && fullName && (
+              <Card className="rounded-2xl mb-8 backdrop-blur-sm border-primary/20" style={{ background: "var(--gradient-card)" }}>
+                <CardContent className="pt-6">
+                  <h2 className="text-2xl font-bold mb-2">Welcome, {fullName}! 👋</h2>
+                  <p className="text-muted-foreground">Let's help you understand and support the women in your life better.</p>
+                </CardContent>
+              </Card>
+            )}
             <MaleEducationContent />
           </>
         ) : (
           <>
+            {isFirstLogin && fullName && (
+              <Card className="rounded-2xl mb-8 backdrop-blur-sm border-primary/20" style={{ background: "var(--gradient-card)" }}>
+                <CardContent className="pt-6">
+                  <h2 className="text-2xl font-bold mb-2">Welcome, {fullName}! 🌸</h2>
+                  <p className="text-muted-foreground">Let's personalize your experience and start tracking your wellness journey.</p>
+                </CardContent>
+              </Card>
+            )}
+            
             <div className="mb-8">
               <h2 className="text-3xl font-bold mb-2">Welcome back!</h2>
               <p className="text-muted-foreground">Here's your health overview</p>
