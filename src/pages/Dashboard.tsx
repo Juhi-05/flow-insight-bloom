@@ -62,15 +62,31 @@ const Dashboard = () => {
           setAvgCycle(Math.round(avg));
         }
 
-        // Predict next period
-        const lastCycle = cycles[0];
-        if (lastCycle && lastCycle.start_date) {
+      // Predict next period
+      const lastCycle = cycles[0];
+      if (lastCycle && lastCycle.start_date) {
+        const today = new Date();
+        today.setHours(0, 0, 0, 0);
+        const startDate = new Date(lastCycle.start_date);
+        startDate.setHours(0, 0, 0, 0);
+        
+        // Check if cycle is ongoing
+        if (lastCycle.end_date) {
+          const endDate = new Date(lastCycle.end_date);
+          endDate.setHours(0, 0, 0, 0);
+          
+          if (today >= startDate && today <= endDate) {
+            setNextPeriod("Cycle ongoing");
+            return;
+          }
+          
+          // Calculate next period from end_date
           const avgLength = cyclesWithLength.length > 0 
             ? cyclesWithLength.reduce((sum, c) => sum + (c.cycle_length || 0), 0) / cyclesWithLength.length 
             : 28;
-          const nextDate = new Date(lastCycle.start_date);
+          const nextDate = new Date(endDate);
           nextDate.setDate(nextDate.getDate() + Math.round(avgLength));
-          const daysUntil = Math.ceil((nextDate.getTime() - new Date().getTime()) / (1000 * 60 * 60 * 24));
+          const daysUntil = Math.ceil((nextDate.getTime() - today.getTime()) / (1000 * 60 * 60 * 24));
           
           const formattedDate = format(nextDate, "MMM dd, yyyy");
           if (daysUntil > 0) {
@@ -80,6 +96,7 @@ const Dashboard = () => {
             setNextPeriod(`${formattedDate} (overdue by ${daysOverdue} days)`);
           }
         }
+      }
       }
 
       // Count symptom logs for this month
